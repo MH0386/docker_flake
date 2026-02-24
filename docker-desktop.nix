@@ -6,13 +6,13 @@
   docker,
   dpkg,
   gtk3,
-  libcap-ng,
+  libcap_ng,
   libseccomp,
   lib,
   pass,
   qemu,
   shadow,
-  xorg,
+  libx11,
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "docker-desktop";
@@ -22,13 +22,13 @@ stdenv.mkDerivation (finalAttrs: {
 
   src = fetchurl {
     url = "https://desktop.docker.com/linux/main/amd64/${finalAttrs.tag}/docker-desktop-amd64.deb";
-    hash = "sha256-pxxlSN2sQqlPUzUPufcK8T+pvdr0cK+9hWTYzwMJv5I=";
+    hash = "sha256-UmmA+ideOINMyAYHut18jVamBoZwr0msx5I//44mAZ4=";
   };
 
-  licenseSrc = fetchurl {
-    url = "https://www.docker.com/legal/docker-subscription-service-agreement/";
-    hash = lib.fakeSha256;
-  };
+  # licenseSrc = fetchurl {
+  #   url = "https://www.docker.com/legal/docker-subscription-service-agreement/";
+  #   hash = "sha256-0jsr5zawh0ygpjnc4c2ak4yjv6mg05nljcf2d54c8whmha63knn2";
+  # };
 
   nativeBuildInputs = [ dpkg ];
 
@@ -37,15 +37,18 @@ stdenv.mkDerivation (finalAttrs: {
     desktop-file-utils
     docker
     gtk3
-    libcap-ng
+    libcap_ng
     libseccomp
     pass
     qemu
     shadow
-    xorg.libX11
+    libx11
   ];
 
-  unpackCmd = "dpkg-deb -x $src .";
+  sourceRoot = ".";
+  unpackPhase = ''
+    dpkg -x $src .
+  '';
 
   installPhase = ''
     runHook preInstall
@@ -63,27 +66,27 @@ stdenv.mkDerivation (finalAttrs: {
     install -Dm644 usr/lib/systemd/user/docker-desktop.service \
       $out/lib/systemd/user/docker-desktop.service
 
-    for plugin in \
-      docker-ai \
-      docker-buildx \
-      docker-compose \
-      docker-debug \
-      docker-desktop \
-      docker-extension \
-      docker-init \
-      docker-mcp \
-      docker-offload \
-      docker-pass \
-      docker-sbom \
-      docker-scout; do
-      install -Dm755 usr/lib/docker/cli-plugins/$plugin \
-        $out/lib/docker/cli-plugins/$plugin
-    done
+    # for plugin in \
+    #   docker-ai \
+    #   docker-buildx \
+    #   docker-compose \
+    #   docker-debug \
+    #   docker-desktop \
+    #   docker-extension \
+    #   docker-init \
+    #   docker-mcp \
+    #   docker-offload \
+    #   docker-pass \
+    #   docker-sbom \
+    #   docker-scout; do
+    #   install -Dm755 usr/lib/docker/cli-plugins/$plugin \
+    #     $out/lib/docker/cli-plugins/$plugin
+    # done
 
     cp -r opt/* $out/opt/
     install -Dm644 usr/share/applications/* $out/share/applications/
-    install -Dm644 $licenseSrc \
-      $out/share/licenses/${finalAttrs.pname}/docker-agreement.txt
+    # install -Dm644 $licenseSrc \
+    #   $out/share/licenses/${finalAttrs.pname}/docker-agreement.txt
 
     runHook postInstall
   '';
