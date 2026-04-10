@@ -140,6 +140,8 @@ stdenv.mkDerivation (finalAttrs: {
     # Install systemd service
     install -Dm644 usr/lib/systemd/user/docker-desktop.service \
       $out/lib/systemd/user/docker-desktop.service
+    substituteInPlace $out/lib/systemd/user/docker-desktop.service \
+      --replace "/opt/docker-desktop" "$out/opt/docker-desktop"
 
     # Install CLI plugins
     for plugin in \
@@ -161,12 +163,15 @@ stdenv.mkDerivation (finalAttrs: {
         $out/share/applications/docker-desktop.desktop
       substituteInPlace $out/share/applications/docker-desktop.desktop \
         --replace-fail "/opt/docker-desktop" "$out/opt/docker-desktop"
+      # Use standard icon name instead of full path
+      substituteInPlace $out/share/applications/docker-desktop.desktop \
+        --replace-fail "Icon=$out/opt/docker-desktop/share/icon.original.png" "Icon=docker-desktop"
     fi
 
-    # Install icon if available
-    if [ -d usr/share/icons/hicolor/256x256/apps ]; then
-      cp -r usr/share/icons/hicolor/256x256/apps/* \
-        $out/share/icons/hicolor/256x256/apps/ 2>/dev/null || true
+    # Install icon with standard name
+    if [ -f usr/share/icons/hicolor/256x256/apps/icon.original.png ]; then
+      install -Dm644 usr/share/icons/hicolor/256x256/apps/icon.original.png \
+        $out/share/icons/hicolor/256x256/apps/docker-desktop.png
     fi
 
     runHook postInstall
