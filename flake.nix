@@ -2,7 +2,7 @@
   description = "Flake that provides Docker Desktop binaries wrapped and patched for NixOS.";
 
   inputs = {
-    nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
 
   outputs =
@@ -15,7 +15,10 @@
       packages = forAllSystems (
         system:
         let
-          pkgs = import nixpkgs { inherit system; };
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
           packages = import ./. { inherit pkgs system; };
         in
         packages
