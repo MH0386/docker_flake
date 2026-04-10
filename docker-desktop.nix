@@ -169,8 +169,8 @@ stdenv.mkDerivation (finalAttrs: {
     fi
 
     # Install icon with standard name
-    if [ -f usr/share/icons/hicolor/256x256/apps/icon.original.png ]; then
-      install -Dm644 usr/share/icons/hicolor/256x256/apps/icon.original.png \
+    if [ -f opt/docker-desktop/share/icon.original.png ]; then
+      install -Dm644 opt/docker-desktop/share/icon.original.png \
         $out/share/icons/hicolor/256x256/apps/docker-desktop.png
     fi
 
