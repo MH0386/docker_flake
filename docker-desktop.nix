@@ -132,59 +132,38 @@ stdenv.mkDerivation (finalAttrs: {
   installPhase = ''
     runHook preInstall
 
-    # Create directory structure
-    install -d \
-      $out/bin \
-      $out/lib/docker/cli-plugins \
-      $out/lib/systemd/user \
-      $out/share/applications \
-      $out/share/licenses/${finalAttrs.pname} \
-      $out/share/icons/hicolor/256x256/apps
+    # 1. Install the entire opt tree
+    mkdir -p $out/opt
+    cp -r opt/docker-desktop $out/opt/
 
-    # Install main binary (wrapper script from opt/docker-desktop/bin/)
-    install -Dm755 opt/docker-desktop/bin/docker-desktop \
-      $out/bin/docker-desktop
+    # 2. Create symlinks for binaries in $out/bin
+    # We link to the one in opt so it can find its resources/app.asar relative to itself
+    mkdir -p $out/bin
+    ln -s $out/opt/docker-desktop/bin/docker-desktop $out/bin/docker-desktop
+    install -Dm755 usr/bin/docker-credential-desktop $out/bin/docker-credential-desktop
 
-    # Install the actual Electron app
-    cp -r opt/docker-desktop \
-      $out/opt/
+    # 3. Install CLI plugins
+    mkdir -p $out/lib/docker/cli-plugins
+    if [ -d usr/lib/docker/cli-plugins ]; then
+      cp usr/lib/docker/cli-plugins/* $out/lib/docker/cli-plugins/
+    fi
 
-    # Install credential helper
-    install -Dm755 usr/bin/docker-credential-desktop \
-      $out/bin/docker-credential-desktop
-
-    # Install systemd service
-    install -Dm644 usr/lib/systemd/user/docker-desktop.service \
-      $out/lib/systemd/user/docker-desktop.service
+    # 4. Systemd Service - Point to the wrapped bin in $out/bin
+    install -Dm644 usr/lib/systemd/user/docker-desktop.service $out/lib/systemd/user/docker-desktop.service
     substituteInPlace $out/lib/systemd/user/docker-desktop.service \
+      --replace "/opt/docker-desktop/bin/docker-desktop" "$out/bin/docker-desktop" \
       --replace "/opt/docker-desktop" "$out/opt/docker-desktop"
 
-    # Install CLI plugins
-    for plugin in \
-      docker-buildx \
-      docker-compose \
-      docker-extension \
-      docker-init \
-      docker-mcp \
-      docker-scout; do
-      if [ -f "usr/lib/docker/cli-plugins/$plugin" ]; then
-        install -Dm755 "usr/lib/docker/cli-plugins/$plugin" \
-          "$out/lib/docker/cli-plugins/$plugin"
-      fi
-    done
-
-    # Install desktop file and fix paths
+    # 5. Desktop File - Point Exec to the wrapped bin and fix Icon
     if [ -f usr/share/applications/docker-desktop.desktop ]; then
-      install -Dm644 usr/share/applications/docker-desktop.desktop \
-        $out/share/applications/docker-desktop.desktop
+      install -Dm644 usr/share/applications/docker-desktop.desktop $out/share/applications/docker-desktop.desktop
       substituteInPlace $out/share/applications/docker-desktop.desktop \
-        --replace-fail "/opt/docker-desktop" "$out/opt/docker-desktop"
-      # Use standard icon name instead of full path
-      substituteInPlace $out/share/applications/docker-desktop.desktop \
+        --replace-fail "/opt/docker-desktop/bin/docker-desktop" "$out/bin/docker-desktop" \
+        --replace-fail "/opt/docker-desktop" "$out/opt/docker-desktop" \
         --replace-fail "Icon=$out/opt/docker-desktop/share/icon.original.png" "Icon=docker-desktop"
     fi
 
-    # Install icon with standard name
+    # 6. Icon
     if [ -f opt/docker-desktop/share/icon.original.png ]; then
       install -Dm644 opt/docker-desktop/share/icon.original.png \
         $out/share/icons/hicolor/256x256/apps/docker-desktop.png
@@ -193,11 +172,12 @@ stdenv.mkDerivation (finalAttrs: {
     runHook postInstall
   '';
 
-  # Wrapper script to set up the environment
   postInstall = ''
-    # Wrap the main binary with proper library path
-    wrapProgram $out/bin/docker-desktop \
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath finalAttrs.buildInputs}" \
+    # Wrap the binary inside opt so the symlink in $out/bin uses these environment settings
+    wrapProgram $out/opt/docker-desktop/bin/docker-desktop \
+      --prefix LD_LIBRARY_PATH : "${
+        lib.makeLibraryPath (finalAttrs.buildInputs ++ [ stdenv.cc.cc.lib ])
+      }" \
       --prefix PATH : "${
         lib.makeBinPath [
           docker
@@ -208,7 +188,7 @@ stdenv.mkDerivation (finalAttrs: {
       --add-flags "--ozone-platform-hint=auto" \
       --add-flags "--enable-features=WaylandWindowDecorations" \
       --set DOCKER_DESKTOP_CLI_VERSION "${finalAttrs.version}" \
-      --set DOCKER_CONFIG "$HOME/.docker"
+      --set DOCKER_CONFIG "\$HOME/.docker"
   '';
 
   meta = {
