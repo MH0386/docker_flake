@@ -13,6 +13,9 @@
   gdk-pixbuf,
   at-spi2-atk,
   at-spi2-core,
+  atk,
+  fontconfig,
+  freetype,
   # X11 dependencies
   libxkbcommon,
   libdrm,
@@ -23,6 +26,11 @@
   libxfixes,
   libxrandr,
   libxcb,
+  libXcursor,
+  libXi,
+  libXrender,
+  libXtst,
+  libxshmfence,
   mesa,
   # Audio
   alsa-lib,
@@ -69,6 +77,9 @@ stdenv.mkDerivation (finalAttrs: {
     gdk-pixbuf
     at-spi2-atk
     at-spi2-core
+    atk
+    fontconfig
+    freetype
 
     # X11
     libxkbcommon
@@ -80,6 +91,11 @@ stdenv.mkDerivation (finalAttrs: {
     libxfixes
     libxrandr
     libxcb
+    libXcursor
+    libXi
+    libXrender
+    libXtst
+    libxshmfence
 
     # Graphics
     mesa
