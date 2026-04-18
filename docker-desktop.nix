@@ -137,7 +137,6 @@ stdenv.mkDerivation (finalAttrs: {
     cp -r opt $out/
 
     # 2. Create symlinks for binaries in $out/bin
-    # We link to the one in opt so it can find its resources/app.asar relative to itself
     mkdir -p $out/bin
     ln -s $out/opt/docker-desktop/bin/docker-desktop $out/bin/docker-desktop
     install -Dm755 usr/bin/docker-credential-desktop $out/bin/docker-credential-desktop
@@ -195,7 +194,6 @@ stdenv.mkDerivation (finalAttrs: {
         --set DOCKER_CONFIG "\$HOME/.docker"
     done
   '';
-
   meta = {
     description = "Docker Desktop for Linux";
     homepage = "https://docs.docker.com/desktop";
