@@ -172,22 +172,28 @@ stdenv.mkDerivation (finalAttrs: {
   '';
 
   postInstall = ''
-    # Wrap the binary inside opt so the symlink in $out/bin uses these environment settings
-    wrapProgram $out/opt/docker-desktop/bin/docker-desktop \
-      --prefix LD_LIBRARY_PATH : "${
-        lib.makeLibraryPath (finalAttrs.buildInputs ++ [ stdenv.cc.cc.lib ])
-      }" \
-      --prefix PATH : "${
-        lib.makeBinPath [
-          docker
-          qemu
-        ]
-      }" \
-      --add-flags "--disable-gpu-sandbox" \
-      --add-flags "--ozone-platform-hint=auto" \
-      --add-flags "--enable-features=WaylandWindowDecorations" \
-      --set DOCKER_DESKTOP_CLI_VERSION "${finalAttrs.version}" \
-      --set DOCKER_CONFIG "\$HOME/.docker"
+    # Ensure the binaries are executable before wrapping
+    chmod +x $out/opt/docker-desktop/bin/docker-desktop
+    chmod +x $out/opt/docker-desktop/bin/com.docker.backend
+
+    # Wrap the binaries inside opt so the symlinks/services use these environment settings
+    for bin in "$out/opt/docker-desktop/bin/docker-desktop" "$out/opt/docker-desktop/bin/com.docker.backend"; do
+      wrapProgram "$bin" \
+        --prefix LD_LIBRARY_PATH : "${
+          lib.makeLibraryPath (finalAttrs.buildInputs ++ [ stdenv.cc.cc.lib ])
+        }" \
+        --prefix PATH : "${
+          lib.makeBinPath [
+            docker
+            qemu
+          ]
+        }" \
+        --add-flags "--disable-gpu-sandbox" \
+        --add-flags "--ozone-platform-hint=auto" \
+        --add-flags "--enable-features=WaylandWindowDecorations" \
+        --set DOCKER_DESKTOP_CLI_VERSION "${finalAttrs.version}" \
+        --set DOCKER_CONFIG "\$HOME/.docker"
+    done
   '';
 
   meta = {
