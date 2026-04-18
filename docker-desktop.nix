@@ -151,8 +151,7 @@ stdenv.mkDerivation (finalAttrs: {
     # 4. Systemd Service - Point to the wrapped bin in $out/bin
     install -Dm644 usr/lib/systemd/user/docker-desktop.service $out/lib/systemd/user/docker-desktop.service
     substituteInPlace $out/lib/systemd/user/docker-desktop.service \
-      --replace "/opt/docker-desktop/bin/docker-desktop" "$out/bin/docker-desktop" \
-      --replace "/opt/docker-desktop" "$out/opt/docker-desktop"
+      --replace-fail "/opt/docker-desktop" "$out/opt/docker-desktop"
 
     # 5. Desktop File - Point Exec to the wrapped bin and fix Icon
     if [ -f usr/share/applications/docker-desktop.desktop ]; then
