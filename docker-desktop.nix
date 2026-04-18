@@ -133,8 +133,8 @@ stdenv.mkDerivation (finalAttrs: {
     runHook preInstall
 
     # 1. Install the entire opt tree
-    mkdir -p $out/opt
-    cp -r opt/docker-desktop $out/opt/
+    mkdir -p $out
+    cp -r opt $out/
 
     # 2. Create symlinks for binaries in $out/bin
     # We link to the one in opt so it can find its resources/app.asar relative to itself
